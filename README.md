@@ -35,8 +35,8 @@ sam local start-api
 
 The API will be available at:
 
-- `POST http://127.0.0.1:3000/get-url-shortener`
-- `GET  http://127.0.0.1:3000/short/{id+}`[web:51]
+`POST https://vxu3axyv91.execute-api.us-east-1.amazonaws.com/Prod/get-url-shortener
+`GET  https://vxu3axyv91.execute-api.us-east-1.amazonaws.com/Prod/short/{shortId}
 
 ### Example requests
 
