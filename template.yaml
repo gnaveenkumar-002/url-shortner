@@ -1,0 +1,100 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: URL Shortener using AWS SAM (Lambda + API Gateway + DynamoDB)
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: url-shortner
+  Environment:
+    Type: String
+    AllowedValues:
+      - Dev
+      - Prod
+    Default: Dev
+
+Globals:
+  Function:
+    Runtime: nodejs24.x
+    Timeout: 10
+    Architectures:
+      - x86_64
+    Environment:
+      Variables:
+        TABLE_NAME: !Sub "${ProjectName}-${Environment}-urls"
+
+Resources:
+
+  ## API Gateway
+  ServerlessRestApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: !Ref Environment
+
+  ## DynamoDB Table
+  UrlShortnerTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      TableName: !Sub "${ProjectName}-${Environment}-urls"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: shortId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: shortId
+          KeyType: HASH
+
+  ## POST /get-url-shortner
+  GetShortUrlFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: hello-world/
+      Handler: app.getShortUrlHandler
+      Events:
+        CreateShortUrl:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ServerlessRestApi
+            Path: /get-url-shortner
+            Method: post
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UrlShortnerTable
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        EntryPoints:
+          - app.ts
+        Target: es2020
+        Minify: true
+
+  ## GET /short/{id}
+  RedirectFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: hello-world/
+      Handler: app.redirectHandler
+      Events:
+        Redirect:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ServerlessRestApi
+            Path: /short/{id+}
+            Method: get
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UrlShortnerTable
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        EntryPoints:
+          - app.ts
+        Target: es2020
+        Minify: true
+
+Outputs:
+  ApiBaseUrl:
+    Description: Base API URL
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/${Environment}/"
