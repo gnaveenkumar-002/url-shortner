@@ -8,11 +8,11 @@ Parameters:
     Default: url-shortner
   Environment:
     Type: String
+    Default: dev
     AllowedValues:
-      - Dev
-      - Prod
-    Default: Dev
-
+      - dev
+      - prod
+    Description: Deployment environment (dev or prod)
 Globals:
   Function:
     Runtime: nodejs24.x
@@ -21,7 +21,7 @@ Globals:
       - x86_64
     Environment:
       Variables:
-        TABLE_NAME: !Sub "${ProjectName}-${Environment}-urls"
+        TABLE_NAME: !Sub "${AWS::StackName}-${Environment}-urls"
 
 Resources:
 
